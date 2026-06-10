@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la /Users/okady/code/website/meet_Count 2>/dev/null && echo \"---\" && ls /Users/okady/code/website/ 2>/dev/null)"
+    ]
+  }
+}

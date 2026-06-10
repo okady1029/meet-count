@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>いっしょ時間時計 ― 大切な人と、あと何回会えるだろう</title>
+  <meta name="description" content="想定寿命から、家族・恋人・友人と「あと何回会えるか」「あと何時間一緒にいられるか」を計算して見える化。ブラウザだけで動く無料ツール。">
+  <meta name="theme-color" content="#a2d2ff">
+  <style>
+    /* ===== カラー変数・基本設定 ===== */
+    :root {
+      --blue: #a2d2ff;
+      /* 淡い青 */
+      --blue-deep: #5b8def;
+      /* 青アクセント */
+      --purple: #cdb4db;
+      /* 淡い紫 */
+      --orange: #ffb703;
+      /* オレンジ */
+      --orange-deep: #fb8500;
+      /* 濃いオレンジ */
+      --ink: #3a3f55;
+      /* 文字色（暗すぎない） */
+      --ink-soft: #6b7088;
+      /* 補助文字 */
+      --glass: rgba(255, 255, 255, 0.55);
+      --glass-line: rgba(255, 255, 255, 0.8);
+      --radius: 22px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic",
+        "Meiryo", system-ui, sans-serif;
+      color: var(--ink);
+      line-height: 1.7;
+      /* 淡い青〜紫のあたたかいグラデーション背景 */
+      background: linear-gradient(160deg, #eaf4ff 0%, #f3ecff 45%, #fff6e9 100%);
+      background-attachment: fixed;
+      min-height: 100vh;
+      padding: 20px 14px 60px;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    /* ===== ヘッダー ===== */
+    header {
+      text-align: center;
+      padding: 24px 8px 18px;
+    }
+
+    .logo {
+      font-size: clamp(1.4rem, 5vw, 2rem);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--blue-deep);
+      margin-bottom: 6px;
+    }
+
+    .logo .clock {
+      color: var(--orange-deep);
+    }
+
+    .catch {
+      font-size: clamp(1.6rem, 6vw, 2.6rem);
+      font-weight: 800;
+      background: linear-gradient(90deg, var(--blue-deep), var(--purple), var(--orange-deep));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin: 10px 0 8px;
+    }
+
+    .sub {
+      font-size: clamp(0.9rem, 3.5vw, 1.05rem);
+      color: var(--ink-soft);
+    }
+
+    /* ===== ガラスカード共通 ===== */
+    .glass {
+      background: var(--glass);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--glass-line);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 28px rgba(91, 141, 239, 0.13);
+    }
+
+    /* ===== あなた自身のセクション ===== */
+    .self-section {
+      padding: 20px 18px;
+      margin-bottom: 18px;
+    }
+
+    .self-section h2 {
+      font-size: 1.1rem;
+      margin-bottom: 14px;
+      color: var(--ink);
+    }
+
+    .self-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 4px;
+    }
+
+    /* あなたの残り人生パネル */
+    .self-panel {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 16px;
+      padding: 16px 18px;
+      background: rgba(255, 255, 255, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      border-radius: 16px;
+      animation: rise 0.5s ease both;
+    }
+
+    .self-panel .ring-center strong {
+      font-size: 1.2rem;
+    }
+
+    .self-text {
+      flex: 1;
+    }
+
+    .self-text .label {
+      font-size: 0.85rem;
+      color: var(--ink-soft);
+    }
+
+    .self-text .big {
+      font-size: clamp(2rem, 9vw, 2.8rem);
+      font-weight: 900;
+      line-height: 1.05;
+      color: var(--blue-deep);
+    }
+
+    .self-text .big small {
+      font-size: 0.9rem;
+      color: var(--ink-soft);
+      font-weight: 600;
+    }
+
+    .self-text .detail {
+      font-size: 0.84rem;
+      color: var(--ink-soft);
+      margin-top: 4px;
+    }
+
+    .self-error {
+      color: var(--orange-deep);
+      font-size: 0.84rem;
+      margin-top: 12px;
+    }
+
+    /* ===== 入力フォーム ===== */
+    .form-section {
+      padding: 20px 18px;
+      margin-bottom: 26px;
+    }
+
+    .form-section h2 {
+      font-size: 1.1rem;
+      margin-bottom: 14px;
+      color: var(--ink);
+    }
+
+    .person-row {
+      display: grid;
+      grid-template-columns: 1.4fr 0.8fr 0.8fr 1fr 0.8fr auto;
+      gap: 10px;
+      align-items: end;
+      padding: 14px;
+      margin-bottom: 12px;
+      background: rgba(255, 255, 255, 0.45);
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .field label {
+      font-size: 0.78rem;
+      color: var(--ink-soft);
+      margin-bottom: 4px;
+    }
+
+    .field input,
+    .field select {
+      font-size: 0.95rem;
+      padding: 9px 10px;
+      border: 1.5px solid rgba(91, 141, 239, 0.25);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--ink);
+      width: 100%;
+    }
+
+    .field input:focus,
+    .field select:focus {
+      outline: none;
+      border-color: var(--blue-deep);
+      box-shadow: 0 0 0 3px rgba(162, 210, 255, 0.4);
+    }
+
+    /* 入力例（プレースホルダー）は薄く表示し、実際の入力とはっきり区別する */
+    .field input::placeholder {
+      color: #c2c7d6;
+      opacity: 1;
+      /* Firefox対策：既定の半透明を打ち消す */
+      font-weight: 400;
+    }
+
+    /* 会う頻度：単位select＋回数input＋「回」を横並びに */
+    .freq-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .freq-controls .in-unit {
+      flex: 0 0 auto;
+      width: auto;
+      padding-right: 6px;
+    }
+
+    .freq-controls .in-count {
+      flex: 1 1 auto;
+      min-width: 0;
+      text-align: center;
+    }
+
+    .freq-controls .freq-suffix {
+      flex: 0 0 auto;
+      font-size: 0.9rem;
+      color: var(--ink-soft);
+    }
+
+    .remove-btn {
+      border: none;
+      background: rgba(251, 133, 0, 0.12);
+      color: var(--orange-deep);
+      font-size: 1.1rem;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .remove-btn:hover {
+      background: rgba(251, 133, 0, 0.25);
+    }
+
+    /* 行内エラーメッセージ */
+    .row-error {
+      grid-column: 1 / -1;
+      color: var(--orange-deep);
+      font-size: 0.82rem;
+      margin-top: 2px;
+    }
+
+    .form-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 12px;
+      padding: 12px 22px;
+      font-size: 0.98rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.2s;
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn-add {
+      background: rgba(91, 141, 239, 0.12);
+      color: var(--blue-deep);
+    }
+
+    .btn-add:hover {
+      background: rgba(91, 141, 239, 0.22);
+    }
+
+    .btn-calc {
+      background: linear-gradient(90deg, var(--blue-deep), var(--orange-deep));
+      color: #fff;
+      box-shadow: 0 6px 16px rgba(251, 133, 0, 0.3);
+      flex: 1;
+      min-width: 160px;
+    }
+
+    .btn-calc:hover {
+      box-shadow: 0 8px 22px rgba(251, 133, 0, 0.42);
+    }
+
+    /* ===== 結果カード ===== */
+    .results {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 18px;
+    }
+
+    .card {
+      padding: 22px 20px 24px;
+      position: relative;
+      overflow: hidden;
+      container-type: inline-size;
+      /* 中の数字をカード幅基準で拡縮させる */
+      animation: rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(22px) scale(0.95);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* リングを0から描くアニメーション（--circ/--dashは各リングに指定） */
+    .ring-prog {
+      stroke-dasharray: var(--dash) var(--circ);
+      animation: ringDraw 1s ease both;
+    }
+
+    @keyframes ringDraw {
+      from {
+        stroke-dasharray: 0 var(--circ);
+      }
+    }
+
+    /* 計算ボタンを押したときの軽いパルス */
+    .btn-calc.pulsing {
+      animation: btnPulse 0.45s ease;
+    }
+
+    @keyframes btnPulse {
+      0% {
+        transform: scale(1);
+      }
+
+      40% {
+        transform: scale(0.96);
+        box-shadow: 0 4px 12px rgba(251, 133, 0, 0.5);
+      }
+
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    /* カウントアップ中の数字がガタつかないよう等幅数字に */
+    .num {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* 動きを減らす設定のユーザーにはアニメを無効化 */
+    @media (prefers-reduced-motion: reduce) {
+
+      .card,
+      .ring-prog,
+      .self-panel,
+      .btn-calc.pulsing,
+      .bar>i {
+        animation: none !important;
+      }
+    }
+
+    /* 最も時間が少ない人物の強調 */
+    .card.most-urgent {
+      border: 2px solid var(--orange);
+      box-shadow: 0 10px 30px rgba(251, 133, 0, 0.28);
+    }
+
+    .urgent-badge {
+      position: absolute;
+      top: 14px;
+      right: -34px;
+      transform: rotate(35deg);
+      background: var(--orange-deep);
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 4px 40px;
+    }
+
+    .card-name {
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .card-name small {
+      font-size: 0.8rem;
+      color: var(--ink-soft);
+      font-weight: 500;
+    }
+
+    /* リング＋会える回数 */
+    .hero {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 14px 0 16px;
+    }
+
+    .ring-wrap {
+      position: relative;
+      width: 92px;
+      height: 92px;
+      flex-shrink: 0;
+    }
+
+    .ring-wrap svg {
+      transform: rotate(-90deg);
+    }
+
+    .ring-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      color: var(--ink-soft);
+    }
+
+    .ring-center strong {
+      font-size: 1.15rem;
+      color: var(--ink);
+    }
+
+    .meet-count {
+      flex: 1;
+    }
+
+    .meet-count .label {
+      font-size: 0.85rem;
+      color: var(--ink-soft);
+    }
+
+    .meet-count .big {
+      font-size: clamp(2rem, 15cqi, 3.2rem);
+      font-weight: 900;
+      line-height: 1;
+      color: var(--orange-deep);
+      white-space: nowrap;
+      /* 数字と「回」を折り返さない */
+    }
+
+    .meet-count .big small {
+      font-size: 0.9rem;
+      color: var(--ink-soft);
+      font-weight: 600;
+    }
+
+    .meet-count .unit {
+      font-size: 1.1rem;
+    }
+
+    /* 一緒に過ごせる時間（会える回数と同じく大きく目立たせる） */
+    .big-hours {
+      text-align: center;
+      margin: 6px 0 16px;
+      padding: 14px 12px;
+      background: rgba(91, 141, 239, 0.08);
+      border-radius: 16px;
+    }
+
+    .big-hours .label {
+      font-size: 0.85rem;
+      color: var(--ink-soft);
+    }
+
+    .big-hours .big {
+      font-size: clamp(2rem, 18cqi, 3.2rem);
+      font-weight: 900;
+      line-height: 1;
+      white-space: nowrap;
+      /* 数字と「時間」を折り返さない */
+      background: linear-gradient(90deg, var(--blue-deep), var(--purple));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .big-hours .unit {
+      font-size: 1.1rem;
+    }
+
+    /* ステータス行 */
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 14px;
+      font-size: 0.85rem;
+      margin-bottom: 14px;
+    }
+
+    .stats .item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stats .item.wide {
+      grid-column: 1 / -1;
+    }
+
+    /* 横幅いっぱい＝1項目で1行（縦並び） */
+    .stats .item span {
+      color: var(--ink-soft);
+      font-size: 0.74rem;
+    }
+
+    .stats .item b {
+      font-size: 1rem;
+      color: var(--ink);
+    }
+
+    /* 各種ゲージ */
+    .gauge-block {
+      margin-bottom: 12px;
+    }
+
+    .gauge-block .glabel {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.76rem;
+      color: var(--ink-soft);
+      margin-bottom: 4px;
+    }
+
+    .bar {
+      height: 12px;
+      border-radius: 99px;
+      background: rgba(91, 141, 239, 0.15);
+      overflow: hidden;
+    }
+
+    .bar>i {
+      display: block;
+      height: 100%;
+      border-radius: 99px;
+      width: var(--w, 0);
+      /* 最終的な長さ（--wで指定） */
+      animation: barGrow 1s ease both;
+      /* 0から--wまで伸びる */
+    }
+
+    @keyframes barGrow {
+      from {
+        width: 0;
+      }
+    }
+
+    .bar.life>i {
+      background: linear-gradient(90deg, var(--blue-deep), var(--purple));
+    }
+
+    .bar.hours>i {
+      background: linear-gradient(90deg, var(--orange), var(--orange-deep));
+    }
+
+    /* 自動メッセージ */
+    .message {
+      margin-top: 14px;
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, 0.5);
+      border-left: 3px solid var(--purple);
+      border-radius: 10px;
+      font-size: 0.88rem;
+    }
+
+    .message p {
+      margin-bottom: 4px;
+    }
+
+    .message p:last-child {
+      margin-bottom: 0;
+      color: var(--blue-deep);
+      font-weight: 700;
+    }
+
+    .message .alert {
+      color: var(--orange-deep);
+      font-weight: 700;
+    }
+
+    .empty {
+      text-align: center;
+      color: var(--ink-soft);
+      padding: 30px 16px;
+      font-size: 0.95rem;
+    }
+
+    /* ===== フッター注意書き ===== */
+    footer {
+      margin-top: 34px;
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--ink-soft);
+      line-height: 1.6;
+      padding: 0 10px;
+    }
+
+    /* ===== スマホ対応（フォーム行を縦積み） ===== */
+    @media (max-width: 680px) {
+      .person-row {
+        grid-template-columns: 1fr 1fr;
+        position: relative;
+      }
+
+      .field.name {
+        grid-column: 1 / -1;
+      }
+
+      .remove-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 32px;
+        height: 32px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <!-- ===== ヘッダー ===== -->
+    <header>
+      <div class="logo">いっしょ時間<span class="clock">時計</span></div>
+      <h1 class="catch">あと何回、会えるだろう。</h1>
+      <p class="sub">大切な人と過ごせる“残り時間”を、数字で見える化。</p>
+    </header>
+
+    <!-- ===== あなた自身の入力 ===== -->
+    <section class="self-section glass">
+      <h2>🪞 まず、あなた自身のこと</h2>
+      <div class="self-form">
+        <div class="field">
+          <label>あなたの現在年齢</label>
+          <input type="text" inputmode="numeric" id="selfAge" placeholder="35">
+        </div>
+        <div class="field">
+          <label>あなたの想定寿命</label>
+          <input type="text" inputmode="numeric" id="selfLife" placeholder="85">
+        </div>
+      </div>
+      <!-- あなた自身の残り人生表示エリア -->
+      <div id="selfResult"></div>
+    </section>
+
+    <!-- ===== 入力フォーム ===== -->
+    <section class="form-section glass">
+      <h2>👤 大切な人を登録する</h2>
+      <div id="personList"></div>
+      <div class="form-actions">
+        <button class="btn btn-add" id="addBtn">＋人を追加</button>
+        <button class="btn btn-calc" id="calcBtn">計算する</button>
+      </div>
+    </section>
+
+    <!-- ===== 結果エリア ===== -->
+    <section class="results" id="results">
+      <p class="empty">情報を入力して「計算する」を押すと、ここに結果が表示されます。</p>
+    </section>
+
+    <!-- ===== 注意書き ===== -->
+    <footer>
+      このサービスは寿命を予測するものではありません。<br>
+      入力された想定寿命をもとにした目安を表示しています。
+    </footer>
+
+  </div>
+
+  <script>
+    "use strict";
+
+    // ===== 会う頻度の単位 → 年間回数の係数 =====
+    // 毎日は回数入力なし。週・月・年は「○回」を自由に入力できる。
+    const UNITS = {
+      day: { label: "毎日", perYear: 365, needsCount: false },
+      week: { label: "週", perYear: 52, needsCount: true },
+      month: { label: "月", perYear: 12, needsCount: true },
+      year: { label: "年", perYear: 1, needsCount: true }
+    };
+
+    const personList = document.getElementById("personList");
+    const resultsEl = document.getElementById("results");
+    const selfAgeEl = document.getElementById("selfAge");
+    const selfLifeEl = document.getElementById("selfLife");
+    const selfResult = document.getElementById("selfResult");
+
+    // 全角数字・記号を半角に変換してから数値化する（日本語入力対策）
+    function parseNum(value) {
+      if (value == null) return NaN;
+      const normalized = String(value)
+        .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)) // 全角数字→半角
+        .replace(/[．。]/g, ".")   // 全角ピリオド・句点→小数点
+        .replace(/[，、\s]/g, "")  // カンマ・読点・空白を除去
+        .trim();
+      return parseFloat(normalized);
+    }
+
+    // 行のテンプレートを生成（初期値を渡せる）
+    function createRow(initial = {}) {
+      const row = document.createElement("div");
+      row.className = "person-row";
+
+      // 頻度の単位optionを生成（毎日／週／月／年）
+      const initUnit = initial.unit || "month";
+      const options = Object.entries(UNITS)
+        .map(([key, v]) => `<option value="${key}" ${initUnit === key ? "selected" : ""}>${v.label}</option>`)
+        .join("");
+
+      row.innerHTML = `
+        <div class="field name">
+          <label>名前</label>
+          <input type="text" class="in-name" placeholder="例：お母さん" value="${initial.name || ""}">
+        </div>
+        <div class="field">
+          <label>現在年齢</label>
+          <input type="text" inputmode="numeric" class="in-age" placeholder="60" value="${initial.age ?? ""}">
+        </div>
+        <div class="field">
+          <label>想定寿命</label>
+          <input type="text" inputmode="numeric" class="in-life" placeholder="85" value="${initial.life ?? ""}">
+        </div>
+        <div class="field">
+          <label>会う頻度</label>
+          <div class="freq-controls">
+            <select class="in-unit">${options}</select>
+            <input type="text" inputmode="numeric" class="in-count" placeholder="1" value="${initial.count ?? ""}">
+            <span class="freq-suffix">回</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>1回の時間(h)</label>
+          <input type="text" inputmode="decimal" class="in-hours" placeholder="3" value="${initial.hours ?? ""}">
+        </div>
+        <button class="remove-btn" title="削除">✕</button>
+      `;
+
+      // 「毎日」のときは回数入力を隠す（毎日＝回数指定不要）
+      const unitSelect = row.querySelector(".in-unit");
+      const countInput = row.querySelector(".in-count");
+      const suffix = row.querySelector(".freq-suffix");
+      function toggleCount() {
+        const hide = !UNITS[unitSelect.value].needsCount; // 毎日なら隠す
+        countInput.style.display = hide ? "none" : "";
+        suffix.style.display = hide ? "none" : "";
+      }
+      unitSelect.addEventListener("change", toggleCount);
+      toggleCount();
+
+      // 削除ボタン（最低1行は残す）
+      row.querySelector(".remove-btn").addEventListener("click", () => {
+        if (personList.children.length > 1) {
+          row.remove();
+        } else {
+          alert("最低1人は必要です。");
+        }
+      });
+
+      personList.appendChild(row);
+    }
+
+    // ===== 1行分の入力を読み取り・検証する =====
+    // selfYears: あなた自身の残り年数（あれば、相手より先に自分が寿命を迎える場合の上限に使う）
+    function readRow(row, selfYears) {
+      const name = row.querySelector(".in-name").value.trim();
+      const age = parseNum(row.querySelector(".in-age").value);
+      const life = parseNum(row.querySelector(".in-life").value);
+      const unit = UNITS[row.querySelector(".in-unit").value];
+      const hours = parseNum(row.querySelector(".in-hours").value);
+      // 毎日は回数固定で1扱い。週・月・年は入力された回数を使う。
+      const count = unit.needsCount ? parseNum(row.querySelector(".in-count").value) : 1;
+
+      // 既存のエラー表示をクリア
+      const oldErr = row.querySelector(".row-error");
+      if (oldErr) oldErr.remove();
+
+      // バリデーション（やさしいメッセージ）
+      let errorMsg = "";
+      if (!name) {
+        errorMsg = "名前を入力してください。";
+      } else if (isNaN(age) || isNaN(life) || isNaN(hours)) {
+        errorMsg = "年齢・想定寿命・時間を数値で入力してください。";
+      } else if (unit.needsCount && (isNaN(count) || count <= 0)) {
+        errorMsg = "会う回数を1以上の数値で入力してください。";
+      } else if (age < 0 || life <= 0 || hours < 0) {
+        errorMsg = "0以上の正しい数値を入力してください。";
+      } else if (age >= life) {
+        errorMsg = "想定寿命は現在年齢より大きくしてください。";
+      }
+
+      if (errorMsg) {
+        const err = document.createElement("div");
+        err.className = "row-error";
+        err.textContent = "⚠ " + errorMsg;
+        row.appendChild(err);
+        return null;
+      }
+
+      // ===== 頻度オブジェクトを生成 =====
+      // perYear: 年間に会う回数 ／ label: カード表示用 ／ phrase: メッセージ用
+      const f = unit.needsCount
+        ? {
+          perYear: unit.perYear * count,
+          label: `${unit.label}${count}回`,
+          phrase: `${unit.label}に${count}回会うなら`
+        }
+        : { perYear: unit.perYear, label: "毎日", phrase: "毎日会うなら" };
+
+      // ===== 計算ロジック =====
+      const remainingYears = Math.max(0, life - age);           // 相手の残り年数
+      const remainingDays = Math.round(remainingYears * 365);   // 残り日数
+      const remainingHours = remainingDays * 24;                 // 残り時間（人生まるごとを時間換算）
+
+      // 会えるのは「あなた」と「相手」のうち先に寿命を迎える方まで。
+      // あなたの残り年数が入力されていれば、その小さい方を有効年数とする。
+      const cappedBySelf = (typeof selfYears === "number") && selfYears < remainingYears;
+      const effectiveYears = (typeof selfYears === "number")
+        ? Math.min(remainingYears, selfYears)
+        : remainingYears;
+
+      const meetCount = Math.round(effectiveYears * f.perYear); // あと会える回数
+      const totalHours = Math.round(meetCount * hours);          // 一緒に過ごせる総時間
+      const lifeProgress = Math.min(100, (age / life) * 100);      // 人生進捗%
+      const lifeRemaining = 100 - lifeProgress;                     // 残り人生%
+
+      return {
+        name, age, life, hours, freq: f,
+        remainingYears, remainingDays, remainingHours, meetCount, totalHours,
+        lifeProgress, lifeRemaining, cappedBySelf
+      };
+    }
+
+    // ===== 自動メッセージを生成 =====
+    function buildMessage(p) {
+      const lines = [];
+      // 頻度に応じたメッセージ
+      lines.push(`<p>${p.freq.phrase}、あと <b>${p.meetCount.toLocaleString()}回</b> です。</p>`);
+      // 会える回数が少ない場合の気付き
+      if (p.meetCount < 50) {
+        lines.push(`<p class="alert">思ったより少ないかもしれません。</p>`);
+      }
+      // あなた自身の残り時間の方が短い場合の気付き
+      if (p.cappedBySelf) {
+        lines.push(`<p class="alert">この回数は、あなた自身の残り時間をもとにした目安です。</p>`);
+      }
+      // 共通の優しい一言
+      lines.push(`<p>今度会う予定を入れてみませんか？</p>`);
+      return `<div class="message">${lines.join("")}</div>`;
+    }
+
+    // ===== カードHTMLを生成 =====
+    // index: 表示順（カードを順番にふわっと出すためのディレイに使う）
+    function buildCard(p, isMostUrgent, index = 0) {
+      // SVGリング（残り人生%を描画）
+      const R = 40, C = 2 * Math.PI * R;
+      const dash = (p.lifeRemaining / 100) * C;
+      const delay = index * 0.12;            // カードごとの登場ディレイ（秒）
+      const delayMs = Math.round(delay * 1000 + 250); // 数字カウントアップ開始ディレイ（ms）
+
+      return `
+        <article class="card glass ${isMostUrgent ? "most-urgent" : ""}" style="animation-delay:${delay}s">
+          ${isMostUrgent ? '<div class="urgent-badge">いちばん会いたい人かも</div>' : ""}
+          <div class="card-name">${escapeHtml(p.name)} <small>（${p.age}歳 / 想定${p.life}歳）</small></div>
+
+          <div class="hero">
+            <div class="ring-wrap">
+              <svg width="92" height="92" viewBox="0 0 92 92">
+                <circle cx="46" cy="46" r="${R}" fill="none" stroke="rgba(91,141,239,0.15)" stroke-width="8"/>
+                <circle cx="46" cy="46" r="${R}" fill="none" stroke="url(#g)" stroke-width="8"
+                        stroke-linecap="round" class="ring-prog"
+                        style="--dash:${dash.toFixed(1)}; --circ:${C.toFixed(1)}; animation-delay:${delay}s"/>
+                <defs>
+                  <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#5b8def"/>
+                    <stop offset="100%" stop-color="#fb8500"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div class="ring-center">
+                <strong>${p.remainingYears}年</strong>
+                <span>残り人生</span>
+              </div>
+            </div>
+
+            <div class="meet-count">
+              <div class="label">あと会えるのは</div>
+              <div class="big"><span class="num" data-target="${p.meetCount}" data-delay="${delayMs}">0</span><span class="unit">回</span></div>
+            </div>
+          </div>
+
+          <!-- 一緒に過ごせる時間（会える回数と同じく大きく強調） -->
+          <div class="big-hours">
+            <div class="label">一緒に過ごせるのは</div>
+            <div class="big"><span class="num" data-target="${p.totalHours}" data-delay="${delayMs}">0</span><span class="unit">時間</span></div>
+          </div>
+
+          <div class="stats">
+            <div class="item"><span>残り年数</span><b>${p.remainingYears} 年</b></div>
+            <div class="item"><span>会う頻度</span><b>${p.freq.label}</b></div>
+            <div class="item wide"><span>残り日数</span><b>${p.remainingDays.toLocaleString()} 日</b></div>
+            <div class="item wide"><span>残り時間</span><b>${p.remainingHours.toLocaleString()} 時間</b></div>
+          </div>
+
+          <!-- 人生ゲージ（0から伸びるアニメーション） -->
+          <div class="gauge-block">
+            <div class="glabel"><span>人生ゲージ</span><span>${Math.round(p.lifeProgress)}%</span></div>
+            <div class="bar life"><i style="--w:${p.lifeProgress}%; animation-delay:${delay}s"></i></div>
+          </div>
+
+          ${buildMessage(p)}
+        </article>
+      `;
+    }
+
+    // XSS対策：名前の簡易エスケープ
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, (c) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[c]));
+    }
+
+    // ===== あなた自身の入力を読み取り・検証する =====
+    function readSelf() {
+      const age = parseNum(selfAgeEl.value);
+      const life = parseNum(selfLifeEl.value);
+
+      // 未入力なら null（相手だけで計算する）
+      if (isNaN(age) && isNaN(life)) return null;
+
+      if (isNaN(age) || isNaN(life)) {
+        return { error: "あなたの年齢と想定寿命の両方を入力してください。" };
+      }
+      if (age < 0 || life <= 0) {
+        return { error: "0以上の正しい数値を入力してください。" };
+      }
+      if (age >= life) {
+        return { error: "想定寿命は現在年齢より大きくしてください。" };
+      }
+
+      const remainingYears = Math.max(0, life - age);
+      const remainingDays = Math.round(remainingYears * 365);
+      const lifeProgress = Math.min(100, (age / life) * 100);
+      const lifeRemaining = 100 - lifeProgress;
+      return { age, life, remainingYears, remainingDays, lifeProgress, lifeRemaining };
+    }
+
+    // ===== あなた自身の残り人生パネルを描画 =====
+    function renderSelf(self) {
+      if (!self) { selfResult.innerHTML = ""; return; }
+      if (self.error) {
+        selfResult.innerHTML = `<p class="self-error">⚠ ${self.error}</p>`;
+        return;
+      }
+      const R = 36, C = 2 * Math.PI * R;
+      const dash = (self.lifeRemaining / 100) * C;
+      selfResult.innerHTML = `
+        <div class="self-panel">
+          <div class="ring-wrap" style="width:84px;height:84px;">
+            <svg width="84" height="84" viewBox="0 0 84 84">
+              <circle cx="42" cy="42" r="${R}" fill="none" stroke="rgba(91,141,239,0.15)" stroke-width="8"/>
+              <circle cx="42" cy="42" r="${R}" fill="none" stroke="url(#gself)" stroke-width="8"
+                      stroke-linecap="round" class="ring-prog"
+                      style="--dash:${dash.toFixed(1)}; --circ:${C.toFixed(1)}"/>
+              <defs>
+                <linearGradient id="gself" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#5b8def"/>
+                  <stop offset="100%" stop-color="#cdb4db"/>
+                </linearGradient>
+              </defs>
+            </svg>
+            <div class="ring-center"><strong>${Math.round(self.lifeRemaining)}%</strong><span>残り</span></div>
+          </div>
+          <div class="self-text">
+            <div class="label">あなたの残りの人生は</div>
+            <div class="big">あと <span class="num" data-target="${self.remainingYears}" data-delay="200">0</span><small> 年</small></div>
+            <div class="detail">${self.remainingDays.toLocaleString()} 日 ／ ${(self.remainingDays * 24).toLocaleString()} 時間</div>
+            <!-- あなたの人生ゲージ（0から伸びる） -->
+            <div class="gauge-block self-gauge">
+              <div class="glabel"><span>人生ゲージ</span><span>${Math.round(self.lifeProgress)}%</span></div>
+              <div class="bar life"><i style="--w:${self.lifeProgress}%"></i></div>
+            </div>
+          </div>
+        </div>`;
+      animateCounts(selfResult); // 残り年数をカウントアップ
+    }
+
+    // ===== 数字を0から目標値までカウントアップ =====
+    function animateCounts(container) {
+      // 動きを減らす設定なら即座に確定値を表示
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      container.querySelectorAll(".num[data-target]").forEach((el) => {
+        const target = parseFloat(el.dataset.target) || 0;
+        const startDelay = parseInt(el.dataset.delay || "0", 10);
+        if (reduce) { el.textContent = target.toLocaleString(); return; }
+
+        const duration = 900;
+        const begin = performance.now() + startDelay;
+        function tick(now) {
+          if (now < begin) { requestAnimationFrame(tick); return; }
+          const t = Math.min(1, (now - begin) / duration);
+          const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
+          el.textContent = Math.round(target * eased).toLocaleString();
+          if (t < 1) requestAnimationFrame(tick);
+          else el.textContent = target.toLocaleString(); // 最後はぴったり確定値に
+        }
+        requestAnimationFrame(tick);
+      });
+    }
+
+    // ===== 計算ボタンの処理 =====
+    function calculate() {
+      // まずあなた自身の残り時間を計算・表示
+      const self = readSelf();
+      renderSelf(self);
+      // 有効なら相手の「あと会える回数」の上限に使う
+      const selfYears = (self && !self.error) ? self.remainingYears : undefined;
+
+      const rows = Array.from(personList.children);
+      const people = [];
+
+      rows.forEach((row) => {
+        const data = readRow(row, selfYears); // null ならエラー（行内に表示済み）
+        if (data) people.push(data);
+      });
+
+      if (people.length === 0) {
+        resultsEl.innerHTML = '<p class="empty">入力内容を確認してください。エラーのある行を修正してね。</p>';
+        return;
+      }
+
+      // 残り時間が少ない順にソート（総時間 → 会える回数の順で比較）
+      people.sort((a, b) => a.totalHours - b.totalHours || a.meetCount - b.meetCount);
+
+      // 先頭（最も少ない人）を強調。indexでカードを順番にふわっと表示
+      const html = people.map((p, i) => buildCard(p, i === 0 && people.length > 1, i)).join("");
+      resultsEl.innerHTML = html;
+
+      // 数字を0からカウントアップ
+      animateCounts(resultsEl);
+
+      // 結果へスクロール
+      resultsEl.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    // ===== イベント登録 =====
+    document.getElementById("addBtn").addEventListener("click", () => createRow());
+    const calcBtn = document.getElementById("calcBtn");
+    calcBtn.addEventListener("click", () => {
+      // ボタンに軽いパルス演出（連打しても再生されるよう一旦解除）
+      calcBtn.classList.remove("pulsing");
+      void calcBtn.offsetWidth; // リフロー強制でアニメをリスタート
+      calcBtn.classList.add("pulsing");
+      calculate();
+    });
+
+    // 初期表示：サンプル入りの1行
+    createRow({ name: "", age: "", life: "", unit: "month", count: "", hours: "" });
+  </script>
+</body>
+
+</html>
